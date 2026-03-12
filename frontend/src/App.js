@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Chess } from 'chess.js';
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:4000');
+const socket = io('https://chess-app-production-3ddb.up.railway.app');
 
 const PIECES = {
   wK: '♔', wQ: '♕', wR: '♖', wB: '♗', wN: '♘', wP: '♙',
@@ -42,7 +42,7 @@ function App() {
     }
   }
 
-  async function createPeerConnection(stream) {
+  const createPeerConnection = useCallback(async (stream) => {
     const pc = new RTCPeerConnection(iceServers);
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
     pc.ontrack = (event) => {
@@ -54,7 +54,7 @@ function App() {
       }
     };
     return pc;
-  }
+  }, []);
 
   useEffect(() => {
     socket.on('waiting', () => setStatus('Waiting for an opponent...'));
@@ -128,7 +128,7 @@ function App() {
       socket.off('webrtc-answer');
       socket.off('webrtc-ice');
     };
-  }, []);
+  }, [createPeerConnection]);
 
   function handleClick(square) {
     if (!myColor) return;
@@ -203,20 +203,16 @@ function App() {
 
   const ranks = myColor === 'black' ? [...RANKS].reverse() : RANKS;
   const files = myColor === 'black' ? [...FILES].reverse() : FILES;
-
   const boardHeight = 70 * 8;
   const videoHeight = (boardHeight / 2) - 8;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', backgroundColor: '#1a1a2e', padding: '20px' }}>
       <h1 style={{ color: 'white', marginBottom: '10px' }}>♟ Chess App</h1>
-
       <div style={{ marginBottom: '12px', padding: '8px 20px', backgroundColor: '#16213e', borderRadius: '8px' }}>
         <p style={{ color: '#eee', margin: 0, textAlign: 'center' }}>{status}</p>
       </div>
-
       <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-
         <div style={{ border: '3px solid #555' }}>
           {ranks.map(rank => (
             <div key={rank} style={{ display: 'flex' }}>
@@ -224,30 +220,17 @@ function App() {
             </div>
           ))}
         </div>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
           <div>
             <p style={{ color: '#aaa', margin: '0 0 4px 0', fontSize: '13px', fontWeight: 'bold' }}>Opponent</p>
-            <video
-              ref={opponentVideo}
-              autoPlay
-              playsInline
-              style={{ width: '240px', height: videoHeight + 'px', backgroundColor: '#111', borderRadius: '8px', border: '2px solid #444', display: 'block', objectFit: 'cover' }}
-            />
+            <video ref={opponentVideo} autoPlay playsInline
+              style={{ width: '240px', height: videoHeight + 'px', backgroundColor: '#111', borderRadius: '8px', border: '2px solid #444', display: 'block', objectFit: 'cover' }} />
           </div>
-
           <div>
             <p style={{ color: '#aaa', margin: '0 0 4px 0', fontSize: '13px', fontWeight: 'bold' }}>You</p>
-            <video
-              ref={myVideo}
-              autoPlay
-              muted
-              playsInline
-              style={{ width: '240px', height: videoHeight + 'px', backgroundColor: '#111', borderRadius: '8px', border: '2px solid #444', display: 'block', objectFit: 'cover', transform: 'scaleX(-1)' }}
-            />
+            <video ref={myVideo} autoPlay muted playsInline
+              style={{ width: '240px', height: videoHeight + 'px', backgroundColor: '#111', borderRadius: '8px', border: '2px solid #444', display: 'block', objectFit: 'cover', transform: 'scaleX(-1)' }} />
           </div>
-
         </div>
       </div>
     </div>
